@@ -31,16 +31,15 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Determine version
-        id: version
+      - name: Determine suffix
+        id: suffix
         shell: pwsh
         run: |
           if ("${{ github.ref_type }}" -eq "tag") {
-            $ver = "${{ github.ref_name }}".TrimStart("v")
+            echo "VALUE=-${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
           } else {
-            $ver = "0.0.0-dev"
+            echo "VALUE=" >> $env:GITHUB_OUTPUT
           }
-          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
 
       - name: Restore
         run: dotnet restore src/SaklSerial/SaklSerial.csproj
@@ -56,19 +55,18 @@ jobs:
           --self-contained true
           -p:PublishSingleFile=true
           -p:PublishTrimmed=true
-          -p:Version=${{ steps.version.outputs.VERSION }}
           -o publish/${{ matrix.artifact }}
 
       - name: Rename EXE
         shell: pwsh
         run: |
-          Copy-Item "publish/${{ matrix.artifact }}/sakl.exe" "sakl-${{ matrix.rid }}.exe"
+          Copy-Item "publish/${{ matrix.artifact }}/sakl.exe" "sakl-${{ matrix.rid }}${{ steps.suffix.outputs.VALUE }}.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: sakl-${{ matrix.rid }}.exe
+          path: sakl-${{ matrix.rid }}${{ steps.suffix.outputs.VALUE }}.exe
           retention-days: 30
 
   release:
@@ -86,9 +84,9 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          name: SoftwareAuthKeyLoader ${{ github.ref_name }}
+          name: SAKL ${{ github.ref_name }}
           body: |
             Version ${{ github.ref_name }}
           files: |
-            artifacts/sakl-win-x64/sakl-win-x64.exe
-            artifacts/sakl-win-arm64/sakl-win-arm64.exe
+            artifacts/sakl-win-x64/sakl-win-x64-${{ github.ref_name }}.exe
+            artifacts/sakl-win-arm64/sakl-win-arm64-${{ github.ref_name }}.exe
