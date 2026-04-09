@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>SaklSerial</RootNamespace>
+    <AssemblyName>sakl</AssemblyName>
+    <Version>0.1</Version>
+    <Authors>Daniel Dugger, Contributors</Authors>
+    <Description>Software P25 Link Layer Authentication Key Loader - Direct Serial Edition</Description>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SaklSerial.Tests" />
+  </ItemGroup>
+
+</Project>

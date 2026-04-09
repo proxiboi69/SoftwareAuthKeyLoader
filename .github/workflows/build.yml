@@ -1,0 +1,94 @@
+name: Build SAKL Serial
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            artifact: sakl-win-x64
+          - rid: win-arm64
+            artifact: sakl-win-arm64
+
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $ver = "${{ github.ref_name }}".TrimStart("v")
+          } else {
+            $ver = "0.0.0-dev"
+          }
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore src/SaklSerial/SaklSerial.csproj
+
+      - name: Test
+        run: dotnet test src/SaklSerial.Tests/SaklSerial.Tests.csproj -c Release
+
+      - name: Publish single-file
+        run: >
+          dotnet publish src/SaklSerial/SaklSerial.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:PublishTrimmed=true
+          -p:Version=${{ steps.version.outputs.VERSION }}
+          -o publish/${{ matrix.artifact }}
+
+      - name: Rename EXE
+        shell: pwsh
+        run: |
+          Copy-Item "publish/${{ matrix.artifact }}/sakl.exe" "sakl-${{ matrix.rid }}.exe"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: sakl-${{ matrix.rid }}.exe
+          retention-days: 30
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SoftwareAuthKeyLoader ${{ github.ref_name }}
+          body: |
+            Version ${{ github.ref_name }}
+          files: |
+            artifacts/sakl-win-x64/sakl-win-x64.exe
+            artifacts/sakl-win-arm64/sakl-win-arm64.exe
