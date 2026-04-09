@@ -111,7 +111,7 @@ namespace SaklSerial
 
             do
             {
-                InventoryCommandListSuIdItems cmd = new InventoryCommandListSuIdItems(inventoryMarker, 59);
+                InventoryCommandListSuIdItems cmd = new InventoryCommandListSuIdItems(inventoryMarker, 5);
                 KmmFrame cmdFrame = new KmmFrame(cmd);
 
                 byte[] fromRadio = transport.QueryRadio(cmdFrame.ToBytes());
